@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mumbai's Eponymous Streets — The People Behind the Names</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""/>
+
+<style>
+  :root {
+    --bg: #0d0a07;
+    --bg-elev: #15110c;
+    --bg-panel: rgba(21, 17, 12, 0.92);
+    --ink: #e8dcc4;
+    --ink-dim: #9a8c70;
+    --ink-faint: #5a4f3d;
+    --accent: #d4a356;
+    --accent-warm: #b8732a;
+    --line: rgba(212, 163, 86, 0.18);
+    --line-strong: rgba(212, 163, 86, 0.35);
+    --display: 'Cormorant Garamond', Georgia, serif;
+    --body: 'Inter', -apple-system, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 14px;
+    line-height: 1.55;
+    overflow: hidden;
+  }
+
+  #app {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* ───────── SIDEBAR ───────── */
+  #sidebar {
+    background: var(--bg-elev);
+    border-right: 1px solid var(--line);
+    overflow-y: auto;
+    padding: 28px 24px 32px;
+    position: relative;
+  }
+
+  #sidebar::-webkit-scrollbar { width: 6px; }
+  #sidebar::-webkit-scrollbar-track { background: transparent; }
+  #sidebar::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 3px; }
+
+  .brand {
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 22px;
+    margin-bottom: 24px;
+  }
+
+  .brand .eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 500;
+    margin-bottom: 10px;
+  }
+
+  .brand h1 {
+    font-family: var(--display);
+    font-weight: 500;
+    font-size: 28px;
+    line-height: 1.1;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+
+  .brand h1 em {
+    font-style: italic;
+    color: var(--accent);
+    font-weight: 400;
+  }
+
+  .brand .tagline {
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--ink-dim);
+    font-style: italic;
+    line-height: 1.5;
+  }
+
+  .section-title {
+    font-family: var(--display);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-dim);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  .filter-group {
+    margin-bottom: 22px;
+  }
+
+  .filter-chip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 12px;
+    margin-bottom: 4px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    border: 1px solid transparent;
+  }
+
+  .filter-chip:hover {
+    background: rgba(212, 163, 86, 0.06);
+  }
+
+  .filter-chip.active {
+    background: rgba(212, 163, 86, 0.1);
+    border-color: var(--line-strong);
+  }
+
+  .filter-chip .label {
+    font-size: 12.5px;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .filter-chip .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .filter-chip .count {
+    font-size: 11px;
+    color: var(--ink-faint);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .filter-chip.active .count { color: var(--accent); }
+
+  .controls-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .ctrl-btn {
+    flex: 1;
+    background: transparent;
+    border: 1px solid var(--line-strong);
+    color: var(--ink-dim);
+    padding: 7px 10px;
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 2px;
+    font-family: var(--body);
+    transition: all 0.15s ease;
+  }
+
+  .ctrl-btn:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .footer-note {
+    margin-top: 32px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    font-size: 10.5px;
+    color: var(--ink-faint);
+    line-height: 1.6;
+    font-style: italic;
+  }
+
+  /* ───────── MAP ───────── */
+  #map {
+    height: 100vh;
+    width: 100%;
+    background: #1a1612;
+  }
+
+  /* Custom Leaflet tile dimming via CSS filter */
+  .leaflet-tile-pane {
+    filter: brightness(0.55) saturate(0.55) contrast(1.1) hue-rotate(-10deg);
+  }
+
+  .leaflet-container {
+    background: #0d0a07;
+    font-family: var(--body);
+  }
+
+  .leaflet-control-zoom a {
+    background: var(--bg-elev) !important;
+    color: var(--accent) !important;
+    border: 1px solid var(--line-strong) !important;
+  }
+
+  .leaflet-control-zoom a:hover {
+    background: var(--accent) !important;
+    color: var(--bg) !important;
+  }
+
+  .leaflet-control-attribution {
+    background: rgba(13, 10, 7, 0.8) !important;
+    color: var(--ink-faint) !important;
+    font-size: 10px !important;
+  }
+
+  .leaflet-control-attribution a {
+    color: var(--ink-dim) !important;
+  }
+
+  /* Custom markers */
+  .street-marker {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--bg);
+    box-shadow: 0 0 0 1px currentColor, 0 0 12px rgba(212, 163, 86, 0.4);
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .street-marker:hover {
+    transform: scale(1.4);
+    box-shadow: 0 0 0 1px currentColor, 0 0 20px rgba(212, 163, 86, 0.7);
+  }
+
+  /* Popup styling */
+  .leaflet-popup-content-wrapper {
+    background: var(--bg-panel) !important;
+    color: var(--ink) !important;
+    border: 1px solid var(--line-strong) !important;
+    border-radius: 4px !important;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6) !important;
+    backdrop-filter: blur(12px);
+  }
+
+  .leaflet-popup-tip {
+    background: var(--bg-panel) !important;
+    border: 1px solid var(--line-strong) !important;
+  }
+
+  .leaflet-popup-content {
+    margin: 18px 20px !important;
+    width: 280px !important;
+    font-family: var(--body);
+  }
+
+  .leaflet-popup-close-button {
+    color: var(--ink-dim) !important;
+    font-size: 22px !important;
+    padding: 6px 8px 0 0 !important;
+  }
+
+  .leaflet-popup-close-button:hover {
+    color: var(--accent) !important;
+  }
+
+  .popup-category {
+    font-size: 9.5px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+
+  .popup-road {
+    font-family: var(--display);
+    font-size: 22px;
+    font-weight: 500;
+    line-height: 1.15;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+
+  .popup-former {
+    font-size: 11.5px;
+    color: var(--ink-dim);
+    font-style: italic;
+    margin-bottom: 14px;
+  }
+
+  .popup-divider {
+    height: 1px;
+    background: var(--line);
+    margin: 12px 0 14px;
+  }
+
+  .popup-person {
+    font-family: var(--display);
+    font-style: italic;
+    font-size: 16px;
+    color: var(--accent);
+    margin-bottom: 2px;
+    font-weight: 500;
+  }
+
+  .popup-meta {
+    font-size: 11px;
+    color: var(--ink-dim);
+    margin-bottom: 10px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .popup-meta strong {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .popup-famous {
+    font-size: 12.5px;
+    color: var(--ink);
+    line-height: 1.55;
+  }
+
+  /* ───────── MOBILE ───────── */
+  @media (max-width: 768px) {
+    #app {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr;
+    }
+    #sidebar {
+      max-height: 38vh;
+      border-right: none;
+      border-bottom: 1px solid var(--line);
+      padding: 20px 18px;
+    }
+    .brand h1 { font-size: 22px; }
+    #map { height: 62vh; }
+  }
+
+  /* Intro overlay */
+  #intro {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.6s ease;
+    text-align: center;
+    padding: 20px;
+  }
+
+  #intro.hide { opacity: 0; pointer-events: none; }
+
+  #intro .title {
+    font-family: var(--display);
+    font-size: 36px;
+    font-weight: 500;
+    color: var(--ink);
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+  }
+
+  #intro .title em { color: var(--accent); font-weight: 400; }
+
+  #intro .sub {
+    font-size: 13px;
+    color: var(--ink-dim);
+    font-style: italic;
+    margin-bottom: 28px;
+  }
+
+  #intro .loader {
+    width: 32px;
+    height: 32px;
+    border: 2px solid var(--line-strong);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div id="intro">
+  <div class="title">Mumbai's Eponymous <em>Streets</em></div>
+  <div class="sub">The people behind the names</div>
+  <div class="loader"></div>
+</div>
+
+<div id="app">
+  <aside id="sidebar">
+    <div class="brand">
+      <div class="eyebrow">A Cartographic Reference</div>
+      <h1>Mumbai's<br>Eponymous <em>Streets</em></h1>
+      <div class="tagline">The roads, lanes and margs of a city, and the lives they remember.</div>
+    </div>
+
+    <div class="filter-group">
+      <div class="section-title">Filter by Theme</div>
+      <div class="controls-row">
+        <button class="ctrl-btn" id="btn-all">Show All</button>
+        <button class="ctrl-btn" id="btn-none">Hide All</button>
+      </div>
+      <div id="filters"></div>
+    </div>
+
+    <div class="footer-note">
+      Click a marker to see the person behind the road. Many old colonial names persist in everyday speech alongside their post-Independence replacements. Compiled May 2026.
+    </div>
+  </aside>
+
+  <div id="map"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+
+<script>
+/* ─────────────────────────────────────────────────
+   DATA: curated streets with verified locations
+   ───────────────────────────────────────────────── */
+
+const CATEGORIES = {
+  freedom: { name: 'Freedom Movement', color: '#d4a356' },
+  reformers: { name: 'Bombay Reformers & Builders', color: '#c47b58' },
+  social: { name: 'Social Reformers & Dalit Movement', color: '#a3683b' },
+  spiritual: { name: 'Saints & Spiritual Figures', color: '#8b7a4f' },
+  culture: { name: 'Literary, Cultural & Cinema', color: '#b89860' },
+  statesmen: { name: 'Statesmen & Politicians', color: '#9c6644' },
+  local: { name: 'Civic Donors & Local Notables', color: '#7d6a48' },
+  colonial: { name: 'Colonial-Era Retained Names', color: '#5d6d7a' }
+};
+
+const STREETS = [
+  // Freedom Movement
+  { lat: 18.9388, lng: 72.8354, road: 'Mahatma Gandhi Road', former: 'formerly Esplanade Road', person: 'Mohandas Karamchand Gandhi', meta: '1869–1948 · Porbandar, Gujarat', famous: 'Leader of the Indian independence movement; pioneer of mass non-violent civil disobedience (satyagraha).', cat: 'freedom' },
+  { lat: 18.9485, lng: 72.8316, road: 'Lokmanya Tilak Marg', former: 'formerly Carnac Road', person: 'Bal Gangadhar Tilak', meta: '1856–1920 · Ratnagiri, Maharashtra', famous: 'Nationalist leader and editor of Kesari. Declared "Swaraj is my birthright." Pioneered Ganesh and Shivaji festivals as nationalist tools.', cat: 'freedom' },
+  { lat: 18.9067, lng: 72.8147, road: 'Shahid Bhagat Singh Marg', former: 'formerly Colaba Causeway', person: 'Bhagat Singh', meta: '1907–1931 · Banga, Punjab', famous: 'Revolutionary socialist of the Hindustan Socialist Republican Association. Hanged by the British. An icon of armed revolutionary nationalism.', cat: 'freedom' },
+  { lat: 18.9434, lng: 72.8234, road: 'Netaji Subhash Chandra Bose Road', former: 'commonly Marine Drive', person: 'Subhas Chandra Bose', meta: '1897–1945 · Cuttack, Odisha', famous: 'Twice president of the Indian National Congress and supreme commander of the Azad Hind Fauj (Indian National Army).', cat: 'freedom' },
+  { lat: 18.9628, lng: 72.8389, road: 'Sardar Vallabhbhai Patel Road', former: 'formerly Sandhurst Road', person: 'Vallabhbhai Patel', meta: '1875–1950 · Nadiad, Gujarat', famous: 'First Deputy PM and Home Minister of independent India. Led the integration of 560+ princely states into the Indian Union.', cat: 'freedom' },
+  { lat: 18.9712, lng: 72.8126, road: 'Bhulabhai Desai Road', former: 'formerly Warden Road', person: 'Bhulabhai Desai', meta: '1877–1946 · Valsad, Gujarat', famous: 'Eminent Bombay barrister and Congress leader. Defended INA soldiers in the Red Fort Trials of 1945–46.', cat: 'freedom' },
+  { lat: 18.9555, lng: 72.8095, road: 'Samaldas Gandhi Marg', former: 'formerly Princess Street', person: 'Samaldas Gandhi', meta: '1897–1953 · Junagadh, Gujarat', famous: 'Led the Arzi Hukumat (provisional government) of Junagadh in 1947, contributing to its accession to India.', cat: 'freedom' },
+  { lat: 19.0173, lng: 72.8290, road: 'Swatantrya Veer Savarkar Marg', former: 'formerly Cadell Road', person: 'V.D. Savarkar', meta: '1883–1966 · Bhagur, Nashik, Maharashtra', famous: 'Revolutionary, poet, and Hindutva ideologue. Imprisoned in the Andaman Cellular Jail. Coined "Hindutva" in 1923.', cat: 'freedom' },
+  { lat: 18.9532, lng: 72.8190, road: 'Yusuf Meherally Road', former: 'formerly Masjid Bandar Road', person: 'Yusuf Meherally', meta: '1903–1950 · Bombay', famous: 'Socialist freedom fighter; credited with coining the slogans "Quit India" and "Simon Go Back". Mayor of Bombay 1942.', cat: 'freedom' },
+  { lat: 18.9876, lng: 72.8423, road: 'Sane Guruji Marg', former: 'formerly Arthur Road', person: 'Sane Guruji', meta: '1899–1950 · Palgad, Ratnagiri', famous: 'Marathi writer and freedom fighter; author of Shyamchi Aai. Campaigned for Dalit temple entry at Pandharpur.', cat: 'freedom' },
+  { lat: 18.9967, lng: 72.8447, road: 'Barrister Nath Pai Marg', former: 'formerly Reay Road', person: 'Nath Pai', meta: '1922–1971 · Vengurla, Maharashtra', famous: 'Socialist parliamentarian and gifted orator; three-time Lok Sabha MP from the Praja Socialist Party.', cat: 'freedom' },
+
+  // Bombay Reformers
+  { lat: 18.9355, lng: 72.8339, road: 'Dadabhai Naoroji Road', former: 'formerly Hornby Road', person: 'Dadabhai Naoroji', meta: '1825–1917 · Bombay', famous: 'The "Grand Old Man of India." Three-time Congress president and first Indian elected to the British House of Commons (1892). Author of the Drain of Wealth theory.', cat: 'reformers' },
+  { lat: 18.9322, lng: 72.8327, road: 'Sir Pherozeshah Mehta Road', former: '', person: 'Sir Pherozeshah Mehta', meta: '1845–1915 · Bombay', famous: 'The "Lion of Bombay." Drafted the Bombay Municipal Act of 1872. Four times President of the BMC; founded the Bombay Chronicle.', cat: 'reformers' },
+  { lat: 18.9533, lng: 72.8131, road: 'Jagannath Shankarsheth Marg', former: 'formerly Girgaon Road', person: 'Jagannath "Nana" Shankarseth', meta: '1803–1865 · Murbad, Thane', famous: 'Often called the "architect of Mumbai." First Indian on the Bombay Legislative Council; co-founder of the Indian Railway Association.', cat: 'reformers' },
+  { lat: 18.9617, lng: 72.8336, road: 'Sir J.J. Road', former: '', person: 'Sir Jamsetjee Jejeebhoy', meta: '1783–1859 · Bombay', famous: 'First Indian to be knighted (1842) and made a baronet (1857). Founded the J.J. Hospital, J.J. School of Art, and a long list of charities.', cat: 'reformers' },
+  { lat: 18.9343, lng: 72.8266, road: 'Veer Nariman Road', former: '', person: 'Khurshed Framji Nariman', meta: '1883–1948 · Bombay', famous: 'Parsi nationalist and Mayor of Bombay (1935–36). Exposed the Backbay Reclamation scandal. Nariman Point also bears his name.', cat: 'reformers' },
+  { lat: 18.9711, lng: 72.8085, road: 'Dr. Gopalrao Deshmukh Marg', former: 'formerly Pedder Road', person: 'Dr. Gopalrao V. Deshmukh', meta: '1883–1963 · Maharashtra', famous: 'Eminent surgeon; first President of the Indian Medical Association and first Mayor of Bombay after Independence. Personal physician to Gandhi, Nehru, and Jinnah.', cat: 'reformers' },
+  { lat: 18.9622, lng: 72.8169, road: 'Dr. Dadasaheb Bhadkamkar Marg', former: 'formerly Lamington Road', person: 'Dr. Dadasaheb Bhadkamkar', meta: 'Bombay physician', famous: 'Bombay physician and Congress associate. Lamington Road was renamed in his honour after Independence.', cat: 'reformers' },
+  { lat: 18.9595, lng: 72.8093, road: 'Maharshi Karve Road', former: 'formerly Queen\u2019s Road', person: 'Dhondo Keshav Karve', meta: '1858–1962 · Sheravali, Ratnagiri', famous: 'Founder of SNDT Women\u2019s University, India\u2019s first university for women (1916). Bharat Ratna in 1958.', cat: 'reformers' },
+  { lat: 18.9700, lng: 72.8045, road: 'M.L. Dahanukar Marg', former: 'formerly Carmichael Road', person: 'M.L. Dahanukar', meta: 'Maharashtra', famous: 'Philanthropic industrialist and Sheriff of Bombay; benefactor of the Parle Tilak Vidyalaya Association.', cat: 'reformers' },
+  { lat: 18.9695, lng: 72.8068, road: 'S.K. Barodawalla Marg', former: 'formerly Altamount Road', person: 'S.K. Barodawalla', meta: 'Bombay', famous: 'Parsi industrialist and philanthropist; donor whose contributions led to the renaming of Altamount Road after Independence.', cat: 'reformers' },
+  { lat: 19.0728, lng: 72.8826, road: 'Mancherji Joshi Road', former: '', person: 'Mancherji Edulji Joshi', meta: '1872–1937 · Bombay', famous: 'Parsi engineer and planner of the Dadar Parsi Colony in the 1920s — one of Asia\u2019s earliest planned residential layouts.', cat: 'reformers' },
+
+  // Social Reformers
+  { lat: 19.0301, lng: 72.8567, road: 'Dr. Babasaheb Ambedkar Marg', former: 'formerly Vincent Road', person: 'Dr. B.R. Ambedkar', meta: '1891–1956 · Mhow, Madhya Pradesh', famous: 'Chief architect of the Indian Constitution and leader of the Dalit movement. First Law Minister of India.', cat: 'social' },
+  { lat: 19.0040, lng: 72.8425, road: 'Mahatma Jyotiba Phule Road', former: 'formerly Naigaon Road', person: 'Jyotirao Phule', meta: '1827–1890 · Pune, Maharashtra', famous: 'Pioneering anti-caste reformer; founder of the Satyashodhak Samaj. With Savitribai, opened the first school for girls in Pune (1848).', cat: 'social' },
+
+  // Spiritual
+  { lat: 19.1106, lng: 72.8270, road: 'Swami Vivekanand Road (S.V. Road)', former: '', person: 'Swami Vivekananda', meta: '1863–1902 · Calcutta', famous: 'Hindu monk and chief disciple of Sri Ramakrishna; founder of the Ramakrishna Mission. Famed for his Chicago Parliament of Religions address, 1893.', cat: 'spiritual' },
+
+  // Culture
+  { lat: 19.0186, lng: 72.8444, road: 'Dadasaheb Phalke Marg', former: 'formerly Dadar Road', person: 'Dadasaheb Phalke', meta: '1870–1944 · Tryambakeshwar, Nashik', famous: 'The "Father of Indian Cinema." Made Raja Harishchandra (1913), India\u2019s first full-length feature film.', cat: 'culture' },
+  { lat: 18.9628, lng: 72.8175, road: 'Patthe Bapurao Marg', former: 'formerly Falkland Road', person: 'Patthe Bapurao Kulkarni', meta: '1866–1945 · Satara, Maharashtra', famous: 'Marathi lavani and tamasha poet; one of the most celebrated shahirs of the early 20th century.', cat: 'culture' },
+
+  // Statesmen
+  { lat: 19.0235, lng: 72.8377, road: 'Senapati Bapat Marg', former: 'formerly Tulsi Pipe Road', person: 'Senapati Bapat', meta: '1880–1967 · Parner, Ahmednagar', famous: 'Revolutionary who led the Mulshi Satyagraha (1921–24) against the Tata dam. Hoisted the Indian flag at Pune on 15 August 1947.', cat: 'statesmen' },
+  { lat: 18.9947, lng: 72.8307, road: 'N.M. Joshi Marg', former: 'formerly De Lisle Road', person: 'Narayan Malhar Joshi', meta: '1879–1955 · Goregaon, Kolaba', famous: '"Father of Indian trade unionism." Founder of the All India Trade Union Congress (1920); India\u2019s first ILO representative.', cat: 'statesmen' },
+  { lat: 18.9676, lng: 72.8093, road: 'N.S. Patkar Marg', former: 'formerly Hughes Road', person: 'Narayan Sadashiv Patkar', meta: 'Maharashtra', famous: 'Local civic figure; the road was renamed after Independence.', cat: 'statesmen' },
+  { lat: 18.9415, lng: 72.8408, road: 'P. D\u2019Mello Road', former: 'formerly Frere Road', person: 'Placid D\u2019Mello', meta: '1918–1958 · Mangalore', famous: 'Pioneering Indian dock-workers\u2019 union leader; organised the Bombay Port Trust workers and led major dockworkers\u2019 strikes in the 1940s–50s.', cat: 'statesmen' },
+  { lat: 19.0410, lng: 72.8254, road: 'Bandra–Worli Sea Link (Rajiv Gandhi)', former: '', person: 'Rajiv Gandhi', meta: '1944–1991 · Bombay', famous: 'Sixth Prime Minister of India (1984–89). Modernised India\u2019s telecommunications and computing. Assassinated at Sriperumbudur.', cat: 'statesmen' },
+
+  // Local notables
+  { lat: 18.9756, lng: 72.8118, road: 'Dr. E. Moses Marg', former: 'formerly Haines Road', person: 'Dr. Elijah Moses', meta: '1879–1951 · Bombay', famous: 'Bene Israel Jewish physician and the first non-British, non-Parsi Mayor of Bombay (1937–38).', cat: 'local' },
+  { lat: 19.0028, lng: 72.8332, road: 'Dr. Ernest Borges Marg', former: 'formerly Hospital Avenue', person: 'Dr. Ernest Borges', meta: '1908–1969 · Goa', famous: 'Pioneering Indian oncologist and surgeon; long-time director of the Tata Memorial Hospital, Bombay.', cat: 'local' },
+  { lat: 18.9956, lng: 72.8404, road: 'Dattaram Lad Path', former: 'formerly Kala Chowky Road', person: 'Comrade Dattaram Lad', meta: '1910–1992 · Ratnagiri', famous: 'Communist trade union leader and key organiser of Bombay textile mill workers; jailed during the 1942 Quit India movement.', cat: 'local' },
+  { lat: 18.9433, lng: 72.8362, road: 'Keshavji Naik Road', former: 'formerly New Chinch Bandar Road', person: 'Keshavji Naik', meta: '1816?–1873 · Kutch, Gujarat', famous: 'Wealthy Bhatia merchant of 19th-century Bombay; pioneering organiser of the city\u2019s first organised public Ganesh Utsav, predating Tilak\u2019s revival.', cat: 'local' },
+
+  // Colonial retained
+  { lat: 18.9601, lng: 72.8019, road: 'Nepean Sea Road', former: '', person: 'Sir Evan Nepean', meta: '1751–1822 · Saltash, Cornwall', famous: 'British colonial administrator and Governor of Bombay (1812–1819). The Malabar Hill road retains his name.', cat: 'colonial' }
+];
+
+/* ─────────────────────────────────────────────────
+   MAP INIT
+   ───────────────────────────────────────────────── */
+
+const map = L.map('map', {
+  zoomControl: true,
+  attributionControl: true
+}).setView([18.9750, 72.8330], 13);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19,
+  attribution: '© OpenStreetMap contributors'
+}).addTo(map);
+
+/* Build category state */
+const activeCategories = new Set(Object.keys(CATEGORIES));
+const markersByCategory = {};
+Object.keys(CATEGORIES).forEach(k => markersByCategory[k] = []);
+
+/* Build markers */
+STREETS.forEach(s => {
+  const color = CATEGORIES[s.cat].color;
+  const icon = L.divIcon({
+    className: '',
+    html: `<div class="street-marker" style="background:${color};color:${color}"></div>`,
+    iconSize: [14, 14],
+    iconAnchor: [7, 7]
+  });
+
+  const marker = L.marker([s.lat, s.lng], { icon });
+  const formerHtml = s.former ? `<div class="popup-former">${s.former}</div>` : '';
+  const popupHtml = `
+    <div class="popup-category" style="color:${color}">${CATEGORIES[s.cat].name}</div>
+    <div class="popup-road">${s.road}</div>
+    ${formerHtml}
+    <div class="popup-divider"></div>
+    <div class="popup-person">${s.person}</div>
+    <div class="popup-meta">${s.meta}</div>
+    <div class="popup-famous">${s.famous}</div>
+  `;
+  marker.bindPopup(popupHtml, { maxWidth: 320, minWidth: 280 });
+  marker.addTo(map);
+  markersByCategory[s.cat].push(marker);
+});
+
+/* ─────────────────────────────────────────────────
+   FILTER UI
+   ───────────────────────────────────────────────── */
+
+const filtersEl = document.getElementById('filters');
+
+Object.keys(CATEGORIES).forEach(key => {
+  const cat = CATEGORIES[key];
+  const count = STREETS.filter(s => s.cat === key).length;
+  const chip = document.createElement('div');
+  chip.className = 'filter-chip active';
+  chip.dataset.cat = key;
+  chip.innerHTML = `
+    <div class="label">
+      <span class="dot" style="background:${cat.color}"></span>
+      ${cat.name}
+    </div>
+    <div class="count">${count}</div>
+  `;
+  chip.addEventListener('click', () => toggleCategory(key, chip));
+  filtersEl.appendChild(chip);
+});
+
+function toggleCategory(key, chipEl) {
+  if (activeCategories.has(key)) {
+    activeCategories.delete(key);
+    chipEl.classList.remove('active');
+    markersByCategory[key].forEach(m => map.removeLayer(m));
+  } else {
+    activeCategories.add(key);
+    chipEl.classList.add('active');
+    markersByCategory[key].forEach(m => m.addTo(map));
+  }
+}
+
+document.getElementById('btn-all').addEventListener('click', () => {
+  Object.keys(CATEGORIES).forEach(key => {
+    if (!activeCategories.has(key)) {
+      activeCategories.add(key);
+      markersByCategory[key].forEach(m => m.addTo(map));
+    }
+  });
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.add('active'));
+});
+
+document.getElementById('btn-none').addEventListener('click', () => {
+  Object.keys(CATEGORIES).forEach(key => {
+    if (activeCategories.has(key)) {
+      activeCategories.delete(key);
+      markersByCategory[key].forEach(m => map.removeLayer(m));
+    }
+  });
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+});
+
+/* ─────────────────────────────────────────────────
+   Hide intro overlay
+   ───────────────────────────────────────────────── */
+setTimeout(() => {
+  document.getElementById('intro').classList.add('hide');
+  setTimeout(() => document.getElementById('intro').remove(), 700);
+}, 900);
+
+</script>
+</body>
+</html>
